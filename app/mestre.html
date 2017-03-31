@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.min.js"></script>
+
+</head>
+<body>
+<p>mestre</p>
+<form id="test">
+
+    <ul v-for="item in chars">
+        <li>Name <input type="text" v-model="item.name" v-on:change="update"/></li>
+        <li>Fdv <input type="text" v-model="item.fdv" v-on:change="update"/></li>
+    </ul>
+    <a v-on:click.prevent="addNew" href="#">+</a>
+</form>
+<script>
+    var vueObject = new Vue({
+        el: test,
+        data: {
+            chars: [],
+            socket: {}
+        },
+        methods: {
+           addNew: function() {
+               vueObject.chars.push({'name':"New Character"})
+           },
+            update: function() {
+               console.log('a',this.socket)
+               this.socket.emit('saveChars', JSON.stringify(vueObject.chars))
+            }
+        },
+        created: function() {
+            this.socket = io('http://localhost:12000/socket', { path: '/rpg/socket.io'});
+            this.socket.on('updateChars', function (data) {
+                vueObject.chars = JSON.parse(data);
+            })
+        }
+    })
+</script>
+</body>
+</html>

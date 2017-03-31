@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.min.js"></script>
+</head>
+<body>
+    <div id="test">
+        <p v-for="item in chars">
+            {{item.name}} {{item.fdv}}*
+        </p>
+    </div>
+    <script>
+        var vueObject = new Vue({
+            el: test,
+            data: {
+                chars: []
+            },
+            created: function() {
+                window.socket = io('http://localhost:12000/socket', { path: '/rpg/socket.io'});
+                socket.on('updateChars', function (data) {
+                    console.log(data);
+                    vueObject.chars = JSON.parse(data);
+                })
+            }
+        })
+
+    </script>
+</body>
+</html>
