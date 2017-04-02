@@ -2,42 +2,303 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Escudo do Mestre</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.min.js"></script>
-
+    <script src="https://unpkg.com/sortablejs@1.4.2"></script>
+    <script src="https://unpkg.com/vue-sortable@latest"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" type="text/css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" rel="stylesheet">
 </head>
-<body>
-<p>mestre</p>
-<form id="test">
+<style>
+    body { background-color: black; }
+    // ---
+       #loading {
+           position: fixed;
+           top:0;
+           left:0;
+           bottom:0;
+           right:0;
+           background-color: black;
+           color: white;
+           z-index: 5;
+           opacity: 1;
+           transition: all 2s linear;
+       }
+    #loading i {
+        position: fixed;
+        top: calc(50% - 24px);
+        left:calc(50% - 24px);
+        font-size: 24px;
 
-    <ul v-for="item in chars">
-        <li>Name <input type="text" v-model="item.name" v-on:change="update"/></li>
-        <li>Fdv <input type="text" v-model="item.fdv" v-on:change="update"/></li>
-    </ul>
-    <a v-on:click.prevent="addNew" href="#">+</a>
-</form>
+    }
+    #loading.loaded {
+        opacity: 0;
+        z-index: -1;
+        pointer-events: none;
+
+    }
+
+    article {
+        background-color: white;
+        padding: 10px;
+        margin: 30px 0 0;
+    }
+    #test {
+        margin-top: 20px;
+    }
+    table { width: 100%; }
+
+    .align-right {
+        text-align: right;
+        width:100%;
+        display: block;
+    }
+    textarea {
+        width: 100%
+    }
+
+</style>
+<body>
+<div id="loading">
+    <i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+    <span class="sr-only">Loading...</span>
+</div>
+<div id="test">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2">
+                <button class="btn btn-primary" aria-hidden="true">
+                    Connections: {{connections}}
+                </button>
+            </div>
+            <div class="col-md-2 col-md-offset-8">
+
+                <button class="btn btn-success" v-on:click.prevent="addChar">
+                    <i class="fa fa-plus" aria-hidden="true"></i>
+                    Adicionar Personagem
+                </button>
+            </div>
+        </div>
+        <div class="row" v-sortable="{ onUpdate: onUpdate }">
+            <div class="col-md-4" v-for="(index,item) in chars">
+            <article v-if="!item.show">
+                <h4>{{item.name}} <button class="btn btn-secondary" v-on:click.prevent="toggleView(index)"  style="font-size:16px; margin-top: -7px;float:right"> <i class="fa fa-angle-down" aria-hidden="true"></i></button></h4>
+            </article>
+            <article v-if="item.show">
+                <div class="btn-group" style="float:right;margin-bottom: 20px;" >
+                    <button class="btn btn-danger" v-on:click.prevent="removeChar(index)" style="font-size:16px"><i class="fa fa-trash-o" aria-hidden="true"></i></button>
+                    <button class="btn btn-primary" v-on:click.prevent="toggleView(index)" style="font-size:16px"> <i class="fa fa-angle-up" aria-hidden="true"></i></button>
+                </div>
+
+                <br>
+                <table>
+                    <tr>
+                        <td>Nome:</td>
+                        <td><input type="text" v-model="item.name" v-on:change="update"/></td>
+                    </tr>
+                    <tr>
+                        <td>Jogador:</td>
+                        <td><input type="text" v-model="item.player" v-on:change="update"/></td>
+                    </tr>
+                    <tr><td>&nbsp;</td><td></td></tr>
+                    <tr>
+                        <td>Forca de Vontade:</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Temporaria</td>
+                        <td>Permanente</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select v-model="item.fdvTmp" v-on:change="update">
+                                <option v-for="index in (parseInt(item.fdv) + 1)" value="{{index}}">{{index}}</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select v-model="item.fdv" v-on:change="update">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <br>
+                <table>
+                    <tr>
+                        <td>Escoriado</td>
+                        <td></td>
+                        <td>
+                            <select v-model="item.life[0]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Machucado</td>
+                        <td>(-1)</td>
+                        <td>
+                            <select v-model="item.life[1]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Ferido</td>
+                        <td>(-1)</td>
+                        <td>
+                            <select v-model="item.life[2]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Ferido gravemente</td>
+                        <td>(-2)</td>
+                        <td>
+                            <select v-model="item.life[3]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Espancado</td>
+                        <td>(-2)</td>
+                        <td>
+                            <select v-model="item.life[4]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Aleijado</td>
+                        <td>(-4)</td>
+                        <td>
+                            <select v-model="item.life[5]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Incapacitado</td>
+                        <td></td>
+                        <td>
+                            <select v-model="item.life[6]" v-on:change="update">
+                                <option value="0"></option>
+                                <option value="1">Contusivo</option>
+                                <option value="2">Letal</option>
+                                <option value="3">Agravado</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <br>
+                <table>
+                    <tr>
+                        <td>Energia</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Quintessência</td>
+                        <td>Paradoxo</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select v-on:change="update" v-model="item.energy">
+                                <option v-for="index in (21 - item.paradox)" value="{{index}}">{{index}}</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select v-on:change="update" v-model="item.paradox">
+                                <option v-for="index in (21 - item.energy)" value="{{index}}">{{index}}</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <br>
+                <p>Experiencia: <input type="number" maxlength="5" aria-valuemax="10" v-model="xp"></p>
+                <div>
+                    <textarea v-model="notes" placeholder="Anotacoes" rows="10"></textarea>
+                </div>
+            </article>
+        </div>
+        </div>
+    </div>
+</div>
 <script>
     var vueObject = new Vue({
         el: test,
         data: {
             chars: [],
-            socket: {}
+            socket: {},
+            connections: 0
         },
         methods: {
-           addNew: function() {
-               vueObject.chars.push({'name':"New Character"})
+           addChar: function() {
+               vueObject.chars.push({'name':"New Character",'show':true,"life":[0,0,0,0,0,0,0],"energy":"0","paradox":"0"})
            },
             update: function() {
-               console.log('a',this.socket)
+               this.socket.emit('saveChars', JSON.stringify(vueObject.chars))
+            },
+            removeChar: function(index) {
+               if (confirm('Are you sure you want to delete '+this.chars[index].name +'?')) {
+                   this.chars.splice(index,1);
+                   this.socket.emit('saveChars', JSON.stringify(vueObject.chars))
+               }
+            },
+            onUpdate: function (event) {
+                this.chars.splice(event.newIndex, 0, this.chars.splice(event.oldIndex, 1)[0])
+                this.socket.emit('saveChars', JSON.stringify(vueObject.chars))
+            },
+            toggleView: function(index) {
+               this.chars[index].show = !this.chars[index].show
                this.socket.emit('saveChars', JSON.stringify(vueObject.chars))
             }
         },
         created: function() {
             this.socket = io('http://localhost:12000/socket', { path: '/rpg/socket.io'});
-            this.socket.on('updateChars', function (data) {
-                vueObject.chars = JSON.parse(data);
-            })
+            this.socket
+                .on('updateChars', function (data) {
+                    vueObject.chars = JSON.parse(data);
+                })
+                .on('clients', function (data) {
+                    console.log(data)
+                    vueObject.connections = data
+                })
+            document.getElementById('loading').setAttribute('class','loaded')
+        },
+        beforeUpdate: function() {
+            document.getElementById('loading').setAttribute('class','')
+        },
+        updated: function() {
+            document.getElementById('loading').setAttribute('class','loaded')
         }
     })
 </script>

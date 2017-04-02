@@ -2,31 +2,180 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.min.js"></script>
+    <title>Campanha</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" type="text/css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" rel="stylesheet">
 </head>
-<body>
-    <div id="test">
-        <p v-for="item in chars">
-            {{item.name}} {{item.fdv}}*
-        </p>
-    </div>
-    <script>
-        var vueObject = new Vue({
-            el: test,
-            data: {
-                chars: []
-            },
-            created: function() {
-                window.socket = io('http://localhost:12000/socket', { path: '/rpg/socket.io'});
-                socket.on('updateChars', function (data) {
-                    console.log(data);
-                    vueObject.chars = JSON.parse(data);
-                })
-            }
-        })
 
-    </script>
+<style>
+    body { background-color: black; }
+    // ---
+    #loading {
+        position: fixed;
+        top:0;
+        left:0;
+        bottom:0;
+        right:0;
+        background-color: black;
+        color: white;
+        z-index: 5;
+        opacity: 1;
+        transition: all 2s linear;
+    }
+    #loading i {
+        position: fixed;
+        top: calc(50% - 24px);
+        left:calc(50% - 24px);
+        font-size: 24px;
+
+    }
+    #loading.loaded {
+        opacity: 0;
+        z-index: -1;
+        pointer-events: none;
+
+    }
+
+    article {
+        background-color: white;
+        padding: 10px;
+        margin: 30px 0 0;
+    }
+    table { width: 100%; }
+
+    .align-right {
+        text-align: right;
+        width:100%;
+        display: block;
+    }
+    .primordial { color: cornflowerblue }
+    .paradox { color: mediumpurple }
+
+</style>
+
+<body>
+    <div id="loading">
+        <i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+        <span class="sr-only">Loading...</span>
+    </div>
+    <div id="test" class="container main">
+        <div class="row">
+            <div v-for="(index, item) in chars" class="col-md-4">
+                <article v-show="item.show">
+                <header>
+                    <h4>{{item.name}}</h4>
+                    <h6>{{item.player}}</h6>
+                </header>
+                <main>
+                    <table>
+                        <tr>
+                            <td>Forca de Vontade</td>
+                            <td style="text-align: right; padding-right: 12px;">
+                                <span v-for="index in parseInt(item.fdv)">
+                                    <i class="fa" aria-hidden="true" v-bind:class="{ 'fa-circle': fdvActive(index, item.fdvTmp), 'fa-circle-o': !fdvActive(index, item.fdvTmp)}"></i>
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                    <br>
+                    <table class="life">
+                        <tr>
+                            <td>Escoriado</td><td> </td>
+                            <td><span v-bind:style="lifeColor(item.life[0])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[0], 'fa-square-o': !item.life[0] }"></i></span></td>
+                        </tr>
+                        <tr>
+                            <td>Machucado</td><td> (-1) </td>
+                            <td><span v-bind:style="lifeColor(item.life[1])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[1], 'fa-square-o': !item.life[1] }"></i></span></td>
+                        </tr>
+                        <tr>
+                            <td>Ferido</td><td> (-1) </td>
+                            <td><span v-bind:style="lifeColor(item.life[2])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[2], 'fa-square-o': !item.life[2] }"></i></span></td>
+                        </tr><tr>
+                            <td>Ferido gravemente</td><td> (-2) </td>
+                            <td><span v-bind:style="lifeColor(item.life[3])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[3], 'fa-square-o': !item.life[3] }"></i></span></td>
+                        </tr>
+                        <tr>
+                            <td>Espancado</td><td> (-2) </td>
+                            <td><span v-bind:style="lifeColor(item.life[4])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[4], 'fa-square-o': !item.life[4] }"></i></span></td>
+                        </tr>
+                        <tr>
+                            <td>Aleijado</td><td> (-4) </td>
+                            <td><span v-bind:style="lifeColor(item.life[5])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[5], 'fa-square-o': !item.life[5] }"></i></span></td>
+                        </tr>
+                        <tr>
+                            <td>Incapacitado</td><td> </td>
+                            <td><span v-bind:style="lifeColor(item.life[6])"><i class="fa" aria-hidden="true" v-bind:class="{ 'fa-square' : item.life[6], 'fa-square-o': !item.life[6] }"></i></span></td>
+                        </tr>
+                    </table><br>
+                    <section class="energy">
+                        <p class="primordial" style="margin: 0;">Quintessencia</p>
+                        <table>
+                            <td v-for="index in 20">
+                                <i class="fa" aria-hidden="true" v-bind:class="energy(index,item.energy,item.paradox)"></i>
+                            </td>
+                        </table>
+                        <p>
+                            <span class="paradox align-right">Paradoxo</span>
+                        </p>
+                    </section>
+
+                </main>
+            </article>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.28/vue.min.js"></script>
+<script>
+    var vueObject = new Vue({
+        el: test,
+        data: {
+            chars: []
+        },
+        methods: {
+            fdvActive: function(index, fdv) {
+                return (index < fdv)
+            },
+            lifeColor: function(status) {
+                switch (status) {
+                    case 1:
+                        return { 'color': 'grey'}
+                    case 2:
+                        return { 'color': 'orange'};
+                    case 3:
+                        return { 'color': 'red'};
+                    default:
+                        return {}
+                }
+            },
+            energy: function(index, energy, paradox) {
+                if (index < energy ) {
+                    return ['fa-square', 'primordial']
+                    //return { 'square': true, 'energy':true }
+                } else if (index > (19 - paradox)) {
+                    return ['fa-square', 'paradox']
+                } else {
+                    return ['fa-square-o']
+                }
+            },
+        },
+        created: function() {
+            window.socket = io('http://localhost:12000/socket', { path: '/rpg/socket.io'});
+            socket.on('updateChars', function (data) {
+                console.log(data);
+                vueObject.chars = JSON.parse(data);
+            })
+            document.getElementById('loading').setAttribute('class','loaded')
+        },
+        beforeUpdate: function() {
+            document.getElementById('loading').setAttribute('class','')
+        },
+        updated: function() {
+            document.getElementById('loading').setAttribute('class','loaded')
+        }
+
+    })
+
+</script>
